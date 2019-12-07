@@ -1,0 +1,3 @@
+[submodule "bert"]
+	path = bert
+	url = http://github.com/Kerram/bert.git
