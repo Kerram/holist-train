@@ -8,7 +8,7 @@ import os
 
 import tensorflow as tf
 
-from deepmath.deephol.train import utils
+import utils
 
 
 class Extractor(object):

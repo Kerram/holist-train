@@ -6,8 +6,8 @@ from __future__ import print_function
 
 import tensorflow as tf
 
-from deepmath.deephol.train import extractor
-from deepmath.deephol.train import utils
+import extractor
+import utils
 
 FLAGS = tf.flags.FLAGS
 
