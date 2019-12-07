@@ -34,7 +34,7 @@ def tfrecord_dataset_with_source(files, source):
 
 
 def get_train_dataset(params):
-  path = os.path.join(params.dataset_dir, 'train', 'train*')
+  path = os.path.join(params.dataset_dir, 'train', 'prooflogs*')
   files = tf.gfile.Glob(path)
   if not files:
     raise ValueError('No training files found in %s' % path)
