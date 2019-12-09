@@ -10,10 +10,10 @@ import pickle
 import numpy as np
 import tensorflow as tf
 
-import architectures
-import data
-import model
-import utils
+from deepmath.deephol.train import architectures
+from deepmath.deephol.train import data
+from deepmath.deephol.train import model
+from deepmath.deephol.train import utils
 
 tf.flags.DEFINE_string(
     'hparams', '',
@@ -213,8 +213,8 @@ def main(argv):
       layer_comb_weight=1.0,
       decay_rate=0.98,
       topk=FLAGS.topk,
-      goal_vocab='vocab_ls.txt',
-      thm_vocab='vocab_ls.txt',
+      goal_vocab='vocab_goal_ls.txt',
+      thm_vocab='vocab_thms_ls.txt',
       replace_generic_variables_and_types=True,
       thm_asmpt_list_file='thm_asmpt_list_train.tfrecord',
       empty_string_thm_emb=None,
@@ -232,9 +232,6 @@ def main(argv):
       model_head=None,
       # Condition parameter selection on tactic (PARAMETERS_CONDITIONED_ON_TAC).
       parameters_conditioned_on_tac=False,
-      bert_checkpoint=tf.train.latest_checkpoint(
-          "{}/{}".format("gs://{}".format('zpp-bucket-1920'), 'bert_model')
-      )
   )
   hparams.parse(FLAGS.hparams)
   if not (hparams.ratio_max_hard_negative_examples <=
