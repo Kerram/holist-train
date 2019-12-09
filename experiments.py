@@ -9,11 +9,10 @@ import os
 import pickle
 import numpy as np
 import tensorflow as tf
-
-from deepmath.deephol.train import architectures
-from deepmath.deephol.train import data
-from deepmath.deephol.train import model
-from deepmath.deephol.train import utils
+import architectures
+import data
+import model
+import utils
 
 tf.flags.DEFINE_string(
     'hparams', '',
