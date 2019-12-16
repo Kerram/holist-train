@@ -172,7 +172,7 @@ def main(argv):
       ### Network size parameters
       word_embedding_size=128,  # Word embedding dimension
       vocab_size=2044 + 4,  # Use most common vocab words + 4 special tokens
-      truncate_size=1000,  # Max number of tokens per term (goal/theorem)
+      truncate_size=512,  # Max number of tokens per term (goal/theorem)
       num_tactics=41,  # Number of tactics
       hidden_size=128,  # Encoding size of theorems and goals
       final_size=128,  # Size of the dense layers on top of the wavenet decoder.
