@@ -34,7 +34,7 @@ def tfrecord_dataset_with_source(files, source):
 
 
 def get_train_dataset(params):
-  path = os.path.join(params.dataset_dir, 'train', 'tf*')
+  path = os.path.join(params.dataset_dir, 'train', 'train*')
   files = tf.gfile.Glob(path)
   if not files:
     raise ValueError('No training files found in %s' % path)
@@ -60,9 +60,9 @@ def get_holparam_dataset(mode, params):
 
   if mode == EVAL:
     if params.eval_dataset_dir:
-      path = os.path.join(params.eval_dataset_dir, 'tf*')
+      path = os.path.join(params.eval_dataset_dir, 'valid*')
     else:
-      path = os.path.join(params.dataset_dir, 'valid', 'tf*')
+      path = os.path.join(params.dataset_dir, 'valid', 'valid*')
     files = tf.gfile.Glob(path)
 
     tf.logging.info('EVAL files: %s.', ' '.join([str(f) for f in files]))
