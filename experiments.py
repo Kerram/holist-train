@@ -107,7 +107,10 @@ def train_and_eval(params):
   train_input_fn, eval_input_fn = get_input_fns(params)
 
   session_config = tf.ConfigProto(
-      intra_op_parallelism_threads=FLAGS.max_threads)
+      intra_op_parallelism_threads=FLAGS.max_threads,
+      device_count={'GPU': 1},
+      allow_soft_placement=False, #TODO Change to True after testing
+      log_device_placement=True,)
   run_config = tf.estimator.RunConfig(
       model_dir=FLAGS.model_dir,
       save_checkpoints_steps=FLAGS.save_checkpoints_steps,
