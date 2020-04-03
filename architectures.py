@@ -113,8 +113,9 @@ def bert_encoding(net, params, mode, type_id):
   model = modeling.BertModel(config=config, is_training=(mode == TRAIN), input_ids=net,
                              token_type_ids=tf.fill(input_shape, type_id))
   tvars = tf.trainable_variables()
+  tvars = [v for v in tvars if 'bert' not in v.name]  
   use_tpu = False
-  """
+  
   init_checkpoint = params.bert_checkpoint
 
   if init_checkpoint:
@@ -129,7 +130,7 @@ def bert_encoding(net, params, mode, type_id):
       scaffold_fn = tpu_scaffold
     else:
       tf.train.init_from_checkpoint(init_checkpoint, assignment_map)
-  """
+  
 
   return model.get_sequence_output()
 
