@@ -19,13 +19,13 @@ tf.flags.DEFINE_string(
     'hparams', '',
     'Comma-separated list of `name=value` hyperparameter values.')
 
-tf.flags.DEFINE_integer('save_checkpoints_steps', 10000,
+tf.flags.DEFINE_integer('save_checkpoints_steps', 1000,
                         'Steps between each checkpoint save.')
 
-tf.flags.DEFINE_integer('keep_checkpoint_max', 10,
+tf.flags.DEFINE_integer('keep_checkpoint_max', 5,
                         'Maximum number of checkpoints kept.')
 
-tf.flags.DEFINE_integer('save_summary_steps', 200, 'Steps between summaries.')
+tf.flags.DEFINE_integer('save_summary_steps', 100, 'Steps between summaries.')
 
 tf.flags.DEFINE_string('dataset_dir', None,
                        'Directory containing train, valid, and test examples.')
@@ -109,14 +109,18 @@ def train_and_eval(params):
   session_config = tf.ConfigProto(
       intra_op_parallelism_threads=FLAGS.max_threads,
       device_count={'GPU': 1},
-      allow_soft_placement=False, #TODO Change to True after testing
-      log_device_placement=True,)
+      allow_soft_placement=True, #TODO Change to True after testing
+      log_device_placement=False,)
+  
+  strategy = tf.compat.v1.distribute.MirroredStrategy()
+
   run_config = tf.estimator.RunConfig(
       model_dir=FLAGS.model_dir,
       save_checkpoints_steps=FLAGS.save_checkpoints_steps,
       keep_checkpoint_max=FLAGS.keep_checkpoint_max,
       save_summary_steps=FLAGS.save_summary_steps,
-      session_config=session_config)
+      session_config=session_config,
+      train_distribute=strategy,)
 
   estimator = tf.estimator.Estimator(
       model_fn=model.model_fn, params=params, config=run_config)
@@ -175,7 +179,7 @@ def main(argv):
       ### Network size parameters
       word_embedding_size=128,  # Word embedding dimension
       vocab_size=2044 + 4,  # Use most common vocab words + 4 special tokens
-      truncate_size=512,  # Max number of tokens per term (goal/theorem)
+      truncate_size=128,  # Max number of tokens per term (goal/theorem)
       num_tactics=41,  # Number of tactics
       hidden_size=128,  # Encoding size of theorems and goals
       final_size=128,  # Size of the dense layers on top of the wavenet decoder.
@@ -206,7 +210,7 @@ def main(argv):
       ratio_neg_examples=7,
       # Multiple of positives, <= ratio_neg_examples.
       ratio_max_hard_negative_examples=5,
-      learning_rate=0.0001,
+      learning_rate=0.000001,
       enc_keep_prob=0.7,  # Parameter for dropout in proof state encoding.
       fc_keep_prob=0.7,  # Parameter for dropout in thm,goal concatentation.
       tac_keep_prob=0.7,  # Parameter for dropout in predicting tactics.
@@ -234,9 +238,9 @@ def main(argv):
       decoder=None,
       model_head=None,
       # Condition parameter selection on tactic (PARAMETERS_CONDITIONED_ON_TAC).
-      parameters_conditioned_on_tac=False,
+      parameters_conditioned_on_tac=True,
       bert_checkpoint=tf.train.latest_checkpoint(
-          "{}/{}".format("gs://{}".format('zpp-bucket-1920'), 'bert_model')
+          "{}/{}".format("gs://{}".format('zpp-bucket-1920'), 'bert-bucket-golkarolka/bert_tiny_128')
       )
   )
   hparams.parse(FLAGS.hparams)

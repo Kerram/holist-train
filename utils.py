@@ -5,6 +5,7 @@ from __future__ import division
 from __future__ import print_function
 
 import tensorflow as tf
+from random import shuffle
 
 
 class Params(dict):
@@ -20,8 +21,25 @@ def vocab_table_from_file(filename, reverse=False):
     keys = [s.strip() for s in f.readlines()]
     values = tf.range(len(keys), dtype=tf.int64)
     if not reverse:
-      init = tf.contrib.lookup.KeyValueTensorInitializer(keys, values)
-      return tf.contrib.lookup.HashTable(init, 1)
+      with tf.device('/CPU:0'):
+        inits = tf.contrib.lookup.KeyValueTensorInitializer(keys, values)
+        tabl = tf.contrib.lookup.HashTable(inits, 1)
+        ks = keys[:20]
+        # shuffle(ks)
+        tks = tf.convert_to_tensor(ks)
+        tvals = tf.to_int32(tabl.lookup(tks))
+        with tf.Session() as sess:
+          sess.run(tf.global_variables_initializer())
+          sess.run(tf.tables_initializer())
+          key_tab = tks.eval()
+          val_tab = tvals.eval()
+          tf.logging.info("First 20 tokens with ids")
+          for (k, t) in zip(key_tab, val_tab):
+            tf.logging.info("ID: %d, TOKEN: %s", t, k)
+        
+        return tabl
     else:
-      init = tf.contrib.lookup.KeyValueTensorInitializer(values, keys)
-      return tf.contrib.lookup.HashTable(init, '')
+      inits = tf.contrib.lookup.KeyValueTensorInitializer(values, keys)
+      return tf.contrib.lookup.HashTable(inits, '')
+
+# x = vocab_table_from_file('vocab.txt')

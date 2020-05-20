@@ -1,1 +1,2 @@
-docker run -v /home/zpp-holist-1920/deephol-data:/home/deephol-data test2
+#docker run -v /home/zpp-holist-1920/deephol-data:/home/deephol-data test2
+docker run --gpus '"device=1"' -v /home/zpp/deephol-data:/home/data holist_train_on_gpu

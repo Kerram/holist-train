@@ -231,6 +231,8 @@ def get_input_fn(dataset_fn,
     drop = mode == EVAL
 
     ds = ds.batch(params['batch_size'], drop_remainder=drop)
-    return ds.make_one_shot_iterator().get_next()
+    ds.cache()
+    ds = ds.prefetch(buffer_size=None)
+    return ds
 
   return input_fn

@@ -61,7 +61,10 @@ def model_fn(features, labels, mode, params, config):
     if params.variable_av_decay > 0:
       opt = tf.contrib.opt.MovingAverageOptimizer(
           opt, average_decay=params.variable_av_decay)
-    train_op = opt.minimize(loss, global_step=global_step)
+
+    tvars = tf.trainable_variables()
+    tvars = [v for v in tvars if 'bert' not in v.name]
+    train_op = opt.minimize(loss, global_step=global_step, var_list=tvars)
     if params.variable_av_decay > 0:
       scaffold = tf.train.Scaffold(saver=opt.swapping_saver())
     else:

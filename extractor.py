@@ -59,7 +59,7 @@ class Extractor(object):
 
   def tokenize(self, tm, table):
     """Tokenizes tensor string according to lookup table."""
-    tm = tf.strings.join(['<START> ', tf.strings.strip(tm), ' <END>'])
+    tm = tf.strings.join(['[CLS] ', tf.strings.strip(tm), ' [SEP]'])
     # Remove parentheses - they can be recovered for S-expressions.
     tm = tf.strings.regex_replace(tm, r'\(', ' ')
     tm = tf.strings.regex_replace(tm, r'\)', ' ')

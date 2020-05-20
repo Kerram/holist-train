@@ -9,6 +9,7 @@ import losses
 import utils
 import wavenet
 from bert import modeling
+import random
 
 FLAGS = tf.flags.FLAGS
 
@@ -101,37 +102,28 @@ def wavenet_encoding(net, params, mode):
         keep_prob=layer_keep_prob)
   return net
 
+def to_mask(n):
+  return tf.cond(tf.equal(n, tf.constant(0)), lambda: tf.constant(0), lambda: tf.constant(1))
 
 def bert_encoding(net, params, mode, type_id):
-  config = modeling.BertConfig(vocab_size=params.vocab_size, hidden_size=params.hidden_size,
-                               num_hidden_layers=8, num_attention_heads=8, intermediate_size=3072)
+  net = _pad_up_to(net, params.truncate_size, 1)
+  zero = tf.constant([0])
+  input_mask = tf.map_fn(lambda x: tf.map_fn(to_mask, x), net)
+
+  #net = tf.Print(net, [tf.shape(net)], "NET SHAPE: ", summarize=-1)
+  #net = tf.Print(net, [net], "NET TENSOR: ", summarize=-1)
+  #input_mask = tf.Print(input_mask, [tf.shape(input_mask)], "INPUT MASK SHAPE: ", summarize=-1)
+  #input_mask = tf.Print(input_mask, [input_mask], "INPUT MASK TENSOR: ", summarize=-1)
+
+  config = modeling.BertConfig.from_json_file('tiny_bert_config.json')
 
   input_shape = modeling.get_shape_list(net, expected_rank=2)
   batch_size = input_shape[0]
   seq_length = input_shape[1]
 
   model = modeling.BertModel(config=config, is_training=(mode == TRAIN), input_ids=net,
-                             token_type_ids=tf.fill(input_shape, type_id))
-  tvars = tf.trainable_variables()
-  use_tpu = False
-  """
-  init_checkpoint = params.bert_checkpoint
-
-  if init_checkpoint:
-    (assignment_map, initialized_variable_names
-     ) = modeling.get_assignment_map_from_checkpoint(tvars, init_checkpoint)
-    if use_tpu:
-
-      def tpu_scaffold():
-        tf.train.init_from_checkpoint(init_checkpoint, assignment_map)
-        return tf.train.Scaffold()
-
-      scaffold_fn = tpu_scaffold
-    else:
-      tf.train.init_from_checkpoint(init_checkpoint, assignment_map)
-  """
-
-  return model.get_sequence_output()
+                             input_mask=input_mask, token_type_ids=tf.fill(input_shape, 0))
+  return model.get_pooled_output()
 
 
 class EncodingSpec(
@@ -157,6 +149,27 @@ class EncodingSpec(
     return super(EncodingSpec, cls).__new__(cls, enc, dist, pfstate_enc,
                                             thm_enc, att_key_sim)
 
+# Hack that pretends to be a dict translating between new and old variable names
+# See tensorflow/python/training/warm_starting_util.py#L415
+class Remover:
+  prefixes = []
+  keys_list = []
+
+  def __init__(self, sl):
+    self.prefixes = sl
+    self.keys_list = []
+
+  def get(self, key):
+    pref = ""
+    for p in self.prefixes:
+        if key.startswith(p):
+            pref = p
+    assert pref 
+    self.keys_list.append(key)
+    return key[len(pref):]
+
+  def keys(self):
+    return self.keys_list
 
 def dilated_cnn_goal_encoder(features, labels, mode, params, config):
   """Dilated convolution network.
@@ -177,21 +190,24 @@ def dilated_cnn_goal_encoder(features, labels, mode, params, config):
   # goal_ids shape is [batch_size, length of goal]
   tf.add_to_collection('goal_ids', features['goal_ids'])
 
-  """
-  goal_embedding = get_vocab_embedding('goal_embedding', params)
-  # output shape is [batch_size, goal length, word_embedding_size]
-  goal_net = tf.nn.embedding_lookup(goal_embedding, features['goal_ids'])
-  tf.add_to_collection('goal_embedding', goal_net)
-  with tf.variable_scope('goal', reuse=False):
-    # output shape: [batch_size, 1, goal length, hidden_size]
-    goal_net = wavenet_encoding(goal_net, params, mode)
-  """
+  # goal_embedding = get_vocab_embedding('goal_embedding', params)
+  # # output shape is [batch_size, goal length, word_embedding_size]
+  # goal_net = tf.nn.embedding_lookup(goal_embedding, features['goal_ids'])
+  # tf.add_to_collection('goal_embedding', goal_net)
+  # with tf.variable_scope('goal', reuse=False):
+  #   # output shape: [batch_size, 1, goal length, hidden_size]
+  #   goal_net = wavenet_encoding(goal_net, params, mode)
+
 
   with tf.variable_scope('goal', reuse=False):
     goal_net = bert_encoding(features['goal_ids'], params, mode, 1)
 
-  # output shape is [batch_size, hidden_size]
-  goal_net = tf.reduce_max(goal_net, [1])
+  tf.train.warm_start(
+	params.bert_checkpoint,
+	'encoder/dilated_cnn_pairwise_encoder/goal/bert*',
+	None,
+	Remover(['encoder/dilated_cnn_pairwise_encoder/goal/'])
+  )
 
   # The first goal_net in the collection matches the number of unique goals.
   # This will be used by the predictor to compute the embedding of the goals.
@@ -226,28 +242,31 @@ def dilated_cnn_thm_encoder(features, labels, mode, params, config):
 
   tf.add_to_collection('thm_ids', features['thm_ids'])
   
-  """
-  # thm_ids shape is [batch_size, length of thm]
-  if params.thm_vocab is not None:
-    thm_embedding = get_vocab_embedding('thm_embedding', params)
-    # output shape is [batch_size, thm length, word_embedding_size]
-    thm_net = tf.nn.embedding_lookup(thm_embedding, features['thm_ids'])
-  else:
-    goal_embedding = get_vocab_embedding('goal_embedding', params)
-    # output shape is [batch_size, thm length, word_embedding_size]
-    thm_net = tf.nn.embedding_lookup(goal_embedding, features['thm_ids'])
-  tf.add_to_collection('thm_embedding', thm_net)
+  # # thm_ids shape is [batch_size, length of thm]
+  # if params.thm_vocab is not None:
+  #   thm_embedding = get_vocab_embedding('thm_embedding', params)
+  #   # output shape is [batch_size, thm length, word_embedding_size]
+  #   thm_net = tf.nn.embedding_lookup(thm_embedding, features['thm_ids'])
+  # else:
+  #   goal_embedding = get_vocab_embedding('goal_embedding', params)
+  #   # output shape is [batch_size, thm length, word_embedding_size]
+  #   thm_net = tf.nn.embedding_lookup(goal_embedding, features['thm_ids'])
+  # tf.add_to_collection('thm_embedding', thm_net)
 
-  with tf.variable_scope('thm', reuse=False):
-    # output shape: [batch_size, 1, thm length, hidden_size]
-    thm_net = wavenet_encoding(thm_net, params, mode)
-  """
+  # with tf.variable_scope('thm', reuse=False):
+  #   # output shape: [batch_size, 1, thm length, hidden_size]
+  #   thm_net = wavenet_encoding(thm_net, params, mode)
 
   with tf.variable_scope('thm', reuse=False):
     thm_net = bert_encoding(features['thm_ids'], params, mode, 0)
 
-  # output shape is [batch_size, hidden_size]
-  thm_net = tf.reduce_max(thm_net, [1])
+  tf.train.warm_start(
+	params.bert_checkpoint,
+	'encoder/dilated_cnn_pairwise_encoder/thm/bert*',
+	None,
+	Remover(['encoder/dilated_cnn_pairwise_encoder/thm/'])
+  )
+
   tf.add_to_collection('thm_net', thm_net)
 
   return thm_net
@@ -366,3 +385,4 @@ def pairwise_scorer(encoding_spec, labels, mode, params):
   eval_metric_ops = losses.add_pairwise_losses(predictions, params)
 
   return predictions, eval_metric_ops
+
