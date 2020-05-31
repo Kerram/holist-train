@@ -104,7 +104,7 @@ def get_input_fns(params):
 
 def train_and_eval(params):
   """Creates train_and_eval_fn for estimator framework."""
-  train_input_fn, eval_input_fn = get_input_fns(params)
+  train_input_fn, _ = get_input_fns(params)
 
   session_config = tf.ConfigProto(
       intra_op_parallelism_threads=FLAGS.max_threads,
@@ -125,29 +125,6 @@ def train_and_eval(params):
   estimator = tf.estimator.Estimator(
       model_fn=model.model_fn, params=params, config=run_config)
 
-  train_spec = tf.estimator.TrainSpec(
-      input_fn=train_input_fn, max_steps=FLAGS.max_steps)
-
-  # Create feature_spec and label_spec for exporting eval graph.
-  # Currently we ignore these placeholders for serving and use only feed_dict.
-  feature_spec = {
-      'goal': tf.placeholder(dtype=tf.string, shape=[None]),
-      'thms': tf.placeholder(dtype=tf.string, shape=[None]),
-      'thms_hard_negatives': tf.placeholder(dtype=tf.string, shape=[None])
-  }
-  label_spec = {'tac_id': tf.placeholder(dtype=tf.int64, shape=[None])}
-  build_input = tf.contrib.estimator.build_raw_supervised_input_receiver_fn
-  input_receiver_fn = build_input(feature_spec, label_spec)
-  exporter = tf.estimator.BestExporter(
-      name='best_exporter',
-      event_file_pattern='best_eval/*.tfevents.*',
-      exports_to_keep=5,
-      serving_input_receiver_fn=input_receiver_fn)
-  eval_spec = tf.estimator.EvalSpec(
-      name='continuous_on_eval',
-      input_fn=eval_input_fn,
-      steps=None,
-      exporters=exporter)
   # TODO(smloos): Find a place for this so that it is called only once.
   # Attempt to output the experiment params
   if not tf.gfile.Exists(FLAGS.model_dir):
@@ -157,7 +134,7 @@ def train_and_eval(params):
     tf.logging.info('Saving params pickle: %s', save_file)
     # Pickle the params using the highest protocol available
     pickle.dump(params, f, -1)
-  tf.estimator.train_and_evaluate(estimator, train_spec, eval_spec)
+  estimator.train(train_input_fn, max_steps=FLAGS.max_steps)
 
 
 def main(argv):
