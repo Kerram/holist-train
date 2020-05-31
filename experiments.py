@@ -19,13 +19,13 @@ tf.flags.DEFINE_string(
     'hparams', '',
     'Comma-separated list of `name=value` hyperparameter values.')
 
-tf.flags.DEFINE_integer('save_checkpoints_steps', 1000,
+tf.flags.DEFINE_integer('save_checkpoints_steps', 1000000000,
                         'Steps between each checkpoint save.')
 
 tf.flags.DEFINE_integer('keep_checkpoint_max', 5,
                         'Maximum number of checkpoints kept.')
 
-tf.flags.DEFINE_integer('save_summary_steps', 100, 'Steps between summaries.')
+tf.flags.DEFINE_integer('save_summary_steps', 10000000000, 'Steps between summaries.')
 
 tf.flags.DEFINE_string('dataset_dir', None,
                        'Directory containing train, valid, and test examples.')
@@ -50,7 +50,7 @@ tf.flags.DEFINE_enum(
     'PARAMETERS_CONDITIONED_ON_TAC: Pairwise score depends on tactic label.\n')
 
 tf.flags.DEFINE_integer(
-    'max_steps', None,
+    'max_steps', 180787,
     'Maximum number of steps to run the training for. default: 0 (no limit).')
 
 tf.flags.DEFINE_integer(
@@ -109,7 +109,7 @@ def train_and_eval(params):
   session_config = tf.ConfigProto(
       intra_op_parallelism_threads=FLAGS.max_threads,
       device_count={'GPU': 1},
-      allow_soft_placement=True, #TODO Change to True after testing
+      allow_soft_placement=True,
       log_device_placement=False,)
   
   strategy = tf.compat.v1.distribute.MirroredStrategy()
@@ -178,8 +178,8 @@ def main(argv):
       neg_thms_shuffle_queue=1000,
       ### Network size parameters
       word_embedding_size=128,  # Word embedding dimension
-      vocab_size=2044 + 4,  # Use most common vocab words + 4 special tokens
-      truncate_size=128,  # Max number of tokens per term (goal/theorem)
+      vocab_size=2000,  # Use most common vocab words
+      truncate_size=512,  # Max number of tokens per term (goal/theorem)
       num_tactics=41,  # Number of tactics
       hidden_size=128,  # Encoding size of theorems and goals
       final_size=128,  # Size of the dense layers on top of the wavenet decoder.
@@ -210,7 +210,7 @@ def main(argv):
       ratio_neg_examples=7,
       # Multiple of positives, <= ratio_neg_examples.
       ratio_max_hard_negative_examples=5,
-      learning_rate=0.000001,
+      learning_rate=1e-7,
       enc_keep_prob=0.7,  # Parameter for dropout in proof state encoding.
       fc_keep_prob=0.7,  # Parameter for dropout in thm,goal concatentation.
       tac_keep_prob=0.7,  # Parameter for dropout in predicting tactics.
@@ -221,7 +221,7 @@ def main(argv):
       decay_rate=0.98,
       topk=FLAGS.topk,
       goal_vocab='vocab_ls.txt',
-      thm_vocab='vocab_ls.txt',
+      thm_vocab=None,
       replace_generic_variables_and_types=True,
       thm_asmpt_list_file='thm_asmpt_list_train.tfrecord',
       empty_string_thm_emb=None,
@@ -238,10 +238,10 @@ def main(argv):
       decoder=None,
       model_head=None,
       # Condition parameter selection on tactic (PARAMETERS_CONDITIONED_ON_TAC).
-      parameters_conditioned_on_tac=True,
-      bert_checkpoint=tf.train.latest_checkpoint(
-          "{}/{}".format("gs://{}".format('zpp-bucket-1920'), 'bert-bucket-golkarolka/bert_tiny_128')
-      )
+      parameters_conditioned_on_tac=False,
+      bert_checkpoint="{}/{}".format("gs://{}".format('zpp-bucket-1920'),
+                                     'bert-bucket-golkarolka/bert_model/model.ckpt-1000000'),
+      bert_config="bert_config.json",
   )
   hparams.parse(FLAGS.hparams)
   if not (hparams.ratio_max_hard_negative_examples <=
