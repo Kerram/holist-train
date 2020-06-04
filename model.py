@@ -49,7 +49,7 @@ def model_fn(features, labels, mode, params, config):
   tf.summary.scalar('loss', loss)
 
   if mode == tf.estimator.ModeKeys.TRAIN:
-    train_op = optimization.create_optimizer(loss, params.learning_rate, FLAGS.max_steps, FLAGS.max_steps*0.10, False)
+    train_op = optimization.create_optimizer(loss, params.learning_rate, FLAGS.max_steps, int(FLAGS.max_steps*0.10), False)
 
     scaffold = tf.train.Scaffold()
   else:
