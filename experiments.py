@@ -187,7 +187,7 @@ def main(argv):
       ratio_neg_examples=7,
       # Multiple of positives, <= ratio_neg_examples.
       ratio_max_hard_negative_examples=5,
-      learning_rate=1e-7,
+      learning_rate=1e-4,
       enc_keep_prob=0.7,  # Parameter for dropout in proof state encoding.
       fc_keep_prob=0.7,  # Parameter for dropout in thm,goal concatentation.
       tac_keep_prob=0.7,  # Parameter for dropout in predicting tactics.
@@ -216,9 +216,6 @@ def main(argv):
       model_head=None,
       # Condition parameter selection on tactic (PARAMETERS_CONDITIONED_ON_TAC).
       parameters_conditioned_on_tac=False,
-      bert_checkpoint="{}/{}".format("gs://{}".format('zpp-bucket-1920'),
-                                     'bert-bucket-golkarolka/bert_model/model.ckpt-1000000'),
-      bert_config="bert_config.json",
   )
   hparams.parse(FLAGS.hparams)
   if not (hparams.ratio_max_hard_negative_examples <=

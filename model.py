@@ -6,8 +6,8 @@ from __future__ import print_function
 
 import tensorflow as tf
 
-import extractor
-import utils
+from deepmath.deephol.train import extractor
+from deepmath.deephol.train import utils
 
 FLAGS = tf.flags.FLAGS
 
@@ -61,10 +61,7 @@ def model_fn(features, labels, mode, params, config):
     if params.variable_av_decay > 0:
       opt = tf.contrib.opt.MovingAverageOptimizer(
           opt, average_decay=params.variable_av_decay)
-
-    tvars = tf.trainable_variables()
-    tvars = [v for v in tvars if 'bert' not in v.name]
-    train_op = opt.minimize(loss, global_step=global_step, var_list=tvars)
+    train_op = opt.minimize(loss, global_step=global_step)
     if params.variable_av_decay > 0:
       scaffold = tf.train.Scaffold(saver=opt.swapping_saver())
     else:
