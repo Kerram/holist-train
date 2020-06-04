@@ -50,7 +50,7 @@ tf.flags.DEFINE_enum(
     'PARAMETERS_CONDITIONED_ON_TAC: Pairwise score depends on tactic label.\n')
 
 tf.flags.DEFINE_integer(
-    'max_steps', 90394,
+    'max_steps', 11300,
     'Maximum number of steps to run the training for. default: 0 (no limit).')
 
 tf.flags.DEFINE_integer(
