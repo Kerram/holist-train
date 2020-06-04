@@ -49,9 +49,26 @@ def model_fn(features, labels, mode, params, config):
   tf.summary.scalar('loss', loss)
 
   if mode == tf.estimator.ModeKeys.TRAIN:
-    train_op = optimization.create_optimizer(loss, params.learning_rate, FLAGS.max_steps, int(FLAGS.max_steps*0.10), False)
+    global_step = tf.train.get_or_create_global_step()
+    learning_rate = tf.train.exponential_decay(
+      learning_rate=params.learning_rate,
+      global_step=global_step,
+      decay_steps=100000,
+      decay_rate=params.decay_rate)
+    tf.summary.scalar('learning_rate', learning_rate)
 
-    scaffold = tf.train.Scaffold()
+    opt = tf.train.AdamOptimizer(learning_rate)
+    if params.variable_av_decay > 0:
+      opt = tf.contrib.opt.MovingAverageOptimizer(
+        opt, average_decay=params.variable_av_decay)
+
+    tvars = tf.trainable_variables()
+    tvars = [v for v in tvars if 'bert' not in v.name]
+    train_op = opt.minimize(loss, global_step=global_step, var_list=tvars)
+    if params.variable_av_decay > 0:
+      scaffold = tf.train.Scaffold(saver=opt.swapping_saver())
+    else:
+      scaffold = tf.train.Scaffold()
   else:
     train_op = None
     scaffold = None
