@@ -49,17 +49,9 @@ def model_fn(features, labels, mode, params, config):
   tf.summary.scalar('loss', loss)
 
   if mode == tf.estimator.ModeKeys.TRAIN:
-    global_step = tf.train.get_or_create_global_step()
-    learning_rate = tf.train.exponential_decay(
-      learning_rate=params.learning_rate,
-      global_step=global_step,
-      decay_steps=100000,
-      decay_rate=params.decay_rate)
-    tf.summary.scalar('learning_rate', learning_rate)
-
     tf.logging.info(params.max_steps)
     train_op = optimization.create_optimizer(
-      loss, learning_rate, params.max_steps, int(params.max_steps * 0.1), False
+      loss, params.learning_rate, params.max_steps, int(params.max_steps * 0.1), False
     )
 
     scaffold = tf.train.Scaffold()
