@@ -125,9 +125,7 @@ class AdamWeightDecayOptimizer(tf.train.Optimizer):
 
   def _get_distributed_grad_and_vars(self,
                                      distribution,
-                                     grads_and_vars,
-                                     global_step=None,
-                                     name=None):
+                                     grads_and_vars):
       reduced_grads = distribution.extended.batch_reduce_to(
           ds_reduce_util.ReduceOp.SUM, grads_and_vars)
       var_list = [v for _, v in grads_and_vars]
@@ -139,7 +137,7 @@ class AdamWeightDecayOptimizer(tf.train.Optimizer):
     if distribute_ctx.has_distribution_strategy():
       grads_and_vars = get_filtered_grad_fn(lambda: grads_and_vars)()
       grads_and_vars = distribute_ctx.get_replica_context().merge_call(
-          self._distributed_apply, args=(grads_and_vars))
+          self._get_distributed_grad_and_vars, args=grads_and_vars)
 
     assignments = []
     for (grad, param) in grads_and_vars:
