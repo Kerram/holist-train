@@ -57,9 +57,9 @@ def model_fn(features, labels, mode, params, config):
       decay_rate=params.decay_rate)
     tf.summary.scalar('learning_rate', learning_rate)
 
-    tf.logging.info(FLAGS.max_steps)
+    tf.logging.info(params.max_steps)
     train_op = optimization.create_optimizer(
-      loss, learning_rate, FLAGS.max_steps, int(FLAGS.max_steps * 0.1), False
+      loss, learning_rate, params.max_steps, int(params.max_steps * 0.1), False
     )
 
     scaffold = tf.train.Scaffold()

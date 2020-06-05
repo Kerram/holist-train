@@ -219,6 +219,7 @@ def main(argv):
       bert_checkpoint="{}/{}".format("gs://{}".format('zpp-bucket-1920'),
                                      'bert-bucket-golkarolka/bert_model/model.ckpt-1000000'),
       bert_config="bert_config.json",
+      max_steps=FLAGS.max_steps,
   )
   hparams.parse(FLAGS.hparams)
   if not (hparams.ratio_max_hard_negative_examples <=
