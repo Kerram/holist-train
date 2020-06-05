@@ -20,6 +20,24 @@ from __future__ import print_function
 
 import re
 import tensorflow as tf
+from tensorflow.python.distribute import distribution_strategy_context as distribute_ctx
+from tensorflow.python.distribute import reduce_util as ds_reduce_util
+
+
+def get_filtered_grad_fn(grad_fn):
+  # `distributed_context.join()` requires that its arguments are parallel
+  # across threads, and in particular that `grads_and_vars` has the same
+  # variables in the same order.
+
+  # When computing gradients in eager mode with multiple threads, you
+  # can get extra variables with a gradient of `None`. This happens when
+  # those variables are accessed in another thread during the gradient
+  # computation. To get a consistent set of variables, we filter out
+  # those with `None` gradients.
+  def filtered_grad_fn(*args, **kwargs):
+    return [(g, v) for g, v in grad_fn(*args, **kwargs) if g is not None]
+
+  return filtered_grad_fn
 
 
 def create_optimizer(loss, init_lr, num_train_steps, num_warmup_steps, use_tpu):
@@ -105,8 +123,24 @@ class AdamWeightDecayOptimizer(tf.train.Optimizer):
     self.epsilon = epsilon
     self.exclude_from_weight_decay = exclude_from_weight_decay
 
+  def _get_distributed_grad_and_vars(self,
+                                     distribution,
+                                     grads_and_vars,
+                                     global_step=None,
+                                     name=None):
+      reduced_grads = distribution.extended.batch_reduce_to(
+          ds_reduce_util.ReduceOp.SUM, grads_and_vars)
+      var_list = [v for _, v in grads_and_vars]
+      return zip(reduced_grads, var_list)
+
   def apply_gradients(self, grads_and_vars, global_step=None, name=None):
     """See base class."""
+
+    if distribute_ctx.has_distribution_strategy():
+      grads_and_vars = get_filtered_grad_fn(lambda: grads_and_vars)()
+      grads_and_vars = distribute_ctx.get_replica_context().merge_call(
+          self._distributed_apply, args=(grads_and_vars))
+
     assignments = []
     for (grad, param) in grads_and_vars:
       if grad is None or param is None:
@@ -119,15 +153,13 @@ class AdamWeightDecayOptimizer(tf.train.Optimizer):
           shape=param.shape.as_list(),
           dtype=tf.float32,
           trainable=False,
-          initializer=tf.zeros_initializer(),
-          aggregation=tf.VariableAggregation.SUM)
+          initializer=tf.zeros_initializer())
       v = tf.get_variable(
           name=param_name + "/adam_v",
           shape=param.shape.as_list(),
           dtype=tf.float32,
           trainable=False,
-          initializer=tf.zeros_initializer(),
-          aggregation=tf.VariableAggregation.SUM)
+          initializer=tf.zeros_initializer())
 
       # Standard Adam update.
       next_m = (
