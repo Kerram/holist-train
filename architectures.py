@@ -7,7 +7,7 @@ import collections
 import tensorflow as tf
 import losses
 import utils
-from bert import modeling
+import modeling
 
 FLAGS = tf.flags.FLAGS
 

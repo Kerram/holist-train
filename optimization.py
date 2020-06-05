@@ -68,9 +68,6 @@ def create_optimizer(loss, init_lr, num_train_steps, num_warmup_steps, use_tpu):
     optimizer = tf.contrib.tpu.CrossShardOptimizer(optimizer)
 
   tvars = tf.trainable_variables()
-  for var in tvars:
-      var.aggregation = tf.VariableAggregation.SUM
-
   grads = tf.gradients(loss, tvars)
 
   # This is how the model was pre-trained.
@@ -122,13 +119,15 @@ class AdamWeightDecayOptimizer(tf.train.Optimizer):
           shape=param.shape.as_list(),
           dtype=tf.float32,
           trainable=False,
-          initializer=tf.zeros_initializer())
+          initializer=tf.zeros_initializer(),
+          aggregation=tf.VariableAggregation.SUM)
       v = tf.get_variable(
           name=param_name + "/adam_v",
           shape=param.shape.as_list(),
           dtype=tf.float32,
           trainable=False,
-          initializer=tf.zeros_initializer())
+          initializer=tf.zeros_initializer(),
+          aggregation=tf.VariableAggregation.SUM)
 
       # Standard Adam update.
       next_m = (
