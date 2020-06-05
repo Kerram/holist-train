@@ -182,7 +182,7 @@ def main(argv):
       att_key_sim_scale=0.0,  # Scaling factor for the attention key similarity.
       beta=0.001,  # Scaling factor for the information bottleneck, if used.
       ### Training parameters
-      batch_size=4,
+      batch_size=1,
       # Integer multiple ratio neg_examples:positives.
       ratio_neg_examples=7,
       # Multiple of positives, <= ratio_neg_examples.
