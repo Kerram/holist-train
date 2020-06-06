@@ -50,7 +50,7 @@ tf.flags.DEFINE_enum(
     'PARAMETERS_CONDITIONED_ON_TAC: Pairwise score depends on tactic label.\n')
 
 tf.flags.DEFINE_integer(
-    'max_steps', 11300,
+    'max_steps', 45200,
     'Maximum number of steps to run the training for. default: 0 (no limit).')
 
 tf.flags.DEFINE_integer(
@@ -182,7 +182,7 @@ def main(argv):
       att_key_sim_scale=0.0,  # Scaling factor for the attention key similarity.
       beta=0.001,  # Scaling factor for the information bottleneck, if used.
       ### Training parameters
-      batch_size=4,
+      batch_size=1,
       # Integer multiple ratio neg_examples:positives.
       ratio_neg_examples=7,
       # Multiple of positives, <= ratio_neg_examples.
