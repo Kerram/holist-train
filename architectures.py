@@ -5,9 +5,9 @@ from __future__ import division
 from __future__ import print_function
 import collections
 import tensorflow as tf
-from deepmath.deephol.train import losses
-from deepmath.deephol.train import utils
-from deepmath.deephol.train import wavenet
+import losses
+import utils
+import wavenet
 
 FLAGS = tf.flags.FLAGS
 
