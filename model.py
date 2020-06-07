@@ -23,7 +23,7 @@ def model_fn(features, labels, mode, params, config):
     features, labels = extr(features, labels)
 
   eval_metric_ops = {}
-  with tf.variable_scope('encoder'):
+  with tf.variable_scope('encoder', reuse=tf.AUTO_REUSE):
     encoding_spec = params.encoder(features, labels, mode, params, config)
     tf.add_to_collection('encoding_net', encoding_spec.enc)
     if encoding_spec.att_key_sim is not None:
