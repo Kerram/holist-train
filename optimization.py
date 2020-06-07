@@ -72,7 +72,7 @@ def create_optimizer(loss, init_lr, num_train_steps, num_warmup_steps, use_tpu):
         (1.0 - is_warmup) * learning_rate + is_warmup * warmup_learning_rate)
 
   # This optimizer is not exactly the one used for pretraining, because of L2 weight decay "bug".
-  # However, we use it only for performance experiments, so it don't make a huge difference.
+  # However, we use it only for performance experiments, so it doesn't make a huge difference.
   optimizer = tf.train.AdamOptimizer(
       learning_rate=learning_rate,
       beta1=0.9,
